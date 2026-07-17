@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QUEZON CITY TRACKING SYSTEM - PROP</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --panel: #111622;
+      --border: #1f293d;
+      --active: #00ffcc;
+      --alert: #ff3355;
+      --text: #c0cdf0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+    body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    /* Header */
+    header { background: var(--panel); border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .title { color: var(--active); font-weight: bold; font-size: 1.1rem; letter-spacing: 2px; }
+    .status-badge { background: rgba(0, 255, 204, 0.1); border: 1px solid var(--active); color: var(--active); padding: 5px 12px; font-size: 0.85rem; }
+    .header-btns { display: flex; gap: 8px; }
+
+    /* Main Layout */
+    .dashboard { display: flex; flex: 1; overflow: hidden; }
+    
+    /* Sidebar List */
+    .sidebar { width: 320px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 10px; }
+    .student-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+    .student-card:hover, .student-card.selected { border-color: var(--active); background: rgba(0,255,204,0.05); }
+    .student-card.missing { border-color: var(--alert); opacity: 0.6; background: rgba(255,51,85,0.05); }
+    .student-name { font-weight: bold; font-size: 0.95rem; color: #fff; }
+    .student-loc { font-size: 0.8rem; color: #7a8ba9; margin-top: 4px; }
+    .tag-active { color: var(--active); font-size: 0.75rem; float: right; }
+    .tag-missing { color: var(--alert); font-size: 0.75rem; float: right; font-weight: bold; }
+    
+    /* Map Container */
+    .map-container { flex: 1; position: relative; background: radial-gradient(circle at center, #141c2e 0%, #090b10 100%); display: flex; align-items: center; justify-content: center; }
+    .radar-grid { width: 90%; height: 90%; border: 1px solid rgba(0,255,204,0.2); position: relative; background-size: 40px 40px; background-image: linear-gradient(to right, rgba(0, 255, 204, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 255, 204, 0.05) 1px, transparent 1px); }
+    .map-label { position: absolute; top: 15px; left: 15px; font-size: 0.8rem; color: var(--active); letter-spacing: 1px; }
+    
+    /* Map Pins */
+    .pin { position: absolute; transform: translate(-50%, -50%); cursor: pointer; text-align: center; transition: left 0.8s ease-in-out, top 0.8s ease-in-out; }
+    .pin-icon { width: 14px; height: 14px; background: var(--active); border-radius: 50%; box-shadow: 0 0 10px var(--active); margin: 0 auto; transition: 0.3s; }
+    .pin.missing .pin-icon { background: transparent; box-shadow: none; border: none; width: auto; height: auto; color: var(--alert); font-weight: bold; font-size: 16px; }
+    .pin-label { font-size: 0.75rem; color: #fff; margin-top: 4px; background: rgba(0,0,0,0.7); padding: 2px 4px; border-radius: 3px; }
+    
+    /* Inspector Panel */
+    .inspector { width: 300px; background: var(--panel); border-left: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .details-title { font-size: 0.8rem; color: #7a8ba9; text-transform: uppercase; margin-bottom: 15px; }
+    .info-group { margin-bottom: 15px; }
+    .info-label { font-size: 0.75rem; color: #576885; }
+    .info-value { font-size: 0.95rem; color: #fff; margin-top: 2px; }
+    .btn-sever { background: rgba(255,51,85,0.15); border: 1px solid var(--alert); color: var(--alert); padding: 12px; width: 100%; cursor: pointer; font-weight: bold; letter-spacing: 1px; transition: 0.2s; margin-top: 10px; }
+    .btn-sever:hover { background: var(--alert); color: #fff; }
+    .btn-action { background: rgba(0,255,204,0.1); border: 1px solid var(--active); color: var(--active); padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .btn-action:hover { background: var(--active); color: #000; }
+    .btn-reset { background: transparent; border: 1px solid #334155; color: #64748b; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; }
+    .btn-reset:hover { border-color: #94a3b8; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title">QC_RADAR // SUBJECT TRACKER</div>
+    <div id="counter-badge" class="status-badge">13/13 SIGNALS ACTIVE</div>
+    <div class="header-btns">
+      <button class="btn-action" onclick="moveActiveStudents()">MOVE SIGNALS (M)</button>
+      <button class="btn-reset" onclick="resetAll()">RESET PROP (R)</button>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <div class="sidebar" id="student-list"></div>
+
+    <div class="map-container">
+      <div class="radar-grid" id="map-grid">
+        <div class="map-label">SECTOR: QUEZON CITY OVERLAY</div>
+      </div>
+    </div>
+
+    <div class="inspector">
+      <div>
+        <div class="details-title">Subject Bio & Telemetry</div>
+        <div class="info-group">
+          <div class="info-label">ALIAS / NAME</div>
+          <div class="info-value" id="disp-name">Select Subject</div>
+        </div>
+        <div class="info-group">
+          <div class="info-label">ORG / AFFILIATION</div>
+          <div class="info-value" id="disp-org">--</div>
+        </div>
+        <div class="info-group">
+          <div class="info-label">LAST KNOWN LOCATION</div>
+          <div class="info-value" id="disp-loc">--</div>
+        </div>
+        <div class="info-group">
+          <div class="info-label">GPS COORDINATES</div>
+          <div class="info-value" id="disp-coords">--</div>
+        </div>
+        <div class="info-group">
+          <div class="info-label">SIGNAL STATUS</div>
+          <div class="info-value" id="disp-status">--</div>
+        </div>
+      </div>
+
+      <button class="btn-sever" onclick="severCurrentSignal()">MARK AS DESAPARECIDO</button>
+    </div>
+  </div>
+
+  <script>
+    const students = [
+      { id: 1, name: "Migs", loc: "UP Diliman - Sunken Garden", x: 25, y: 30, missing: false },
+      { id: 2, name: "Aya", loc: "Katipunan Ave / Ateneo", x: 40, y: 35, missing: false },
+      { id: 3, name: "Therese", loc: "Cubao / Aurora Blvd", x: 45, y: 65, missing: false },
+      { id: 4, name: "Yeoj", loc: "Commonwealth / Philcoa", x: 30, y: 20, missing: false },
+      { id: 5, name: "Sadako", loc: "Eastwood City", x: 75, y: 70, missing: false },
+      { id: 6, name: "Isaiah",  loc: "QC Memorial Circle", x: 35, y: 45, missing: false },
+      { id: 7, name: "Cayleb",  loc: "Tomas Morato / Timog", x: 20, y: 55, missing: false },
+      { id: 8, name: "Cobie",  "Novaliches / Fairview", x: 60, y: 15, missing: false },
+      { id: 9, name: "Frankie", loc: "Krus na Ligas", x: 32, y: 32, missing: false },
+      { id: 10, name: "Ian", loc: "Kamuning Rd", x: 25, y: 60, missing: false },
+      { id: 11, name: "Jaret", loc: "Project 4 / Anonas", x: 55, y: 55, missing: false },
+      { id: 12, name: "Eidrian", loc: "San Mateo Border", x: 80, y: 30, missing: false },
+      { id: 13, name: "Jio",  loc: "Balintawak Market", x: 15, y: 40, missing: false }
+    ];
+
+    let selectedId = 1;
+
+    function render() {
+      // Render Sidebar
+      const listEl = document.getElementById('student-list');
+      listEl.innerHTML = '';
+      students.forEach(s => {
+        const card = document.createElement('div');
+        card.className = `student-card ${s.id === selectedId ? 'selected' : ''} ${s.missing ? 'missing' : ''}`;
+        card.onclick = () => { selectedId = s.id; render(); };
+        card.innerHTML = `
+          <span class="${s.missing ? 'tag-missing' : 'tag-active'}">${s.missing ? 'NO SIGNAL' : 'ONLINE'}</span>
+          <div class="student-name">${s.name}</div>
+          <div class="student-loc">${s.loc}</div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      // Render Map Pins
+      const mapEl = document.getElementById('map-grid');
+      
+      // Update existing or create new pins so smooth CSS movement transition works
+      students.forEach(s => {
+        let pin = document.getElementById(`pin-${s.id}`);
+        if (!pin) {
+          pin = document.createElement('div');
+          pin.id = `pin-${s.id}`;
+          pin.onclick = () => { selectedId = s.id; render(); };
+          mapEl.appendChild(pin);
+        }
+        pin.className = `pin ${s.missing ? 'missing' : ''}`;
+        pin.style.left = `${s.x}%`;
+        pin.style.top = `${s.y}%`;
+        pin.innerHTML = `
+          <div class="pin-icon">${s.missing ? '✕' : ''}</div>
+          <div class="pin-label">${s.name.split(' ')[0]} ${s.name.split(' ')[1]}</div>
+        `;
+      });
+
+      // Render Inspector Details
+      const sel = students.find(s => s.id === selectedId);
+      document.getElementById('disp-name').innerText = sel.name;
+      document.getElementById('disp-org').innerText = sel.org;
+      document.getElementById('disp-loc').innerText = sel.loc;
+      document.getElementById('disp-coords').innerText = `14.${Math.floor(sel.y * 1000)}° N, 121.${Math.floor(sel.x * 1000)}° E`;
+      
+      const statusEl = document.getElementById('disp-status');
+      if (sel.missing) {
+        statusEl.innerText = "NO SIGNAL / DESAPARECIDO";
+        statusEl.style.color = "var(--alert)";
+      } else {
+        statusEl.innerText = "ACTIVE / TRACKING";
+        statusEl.style.color = "var(--active)";
+      }
+
+      // Update Counter
+      const activeCount = students.filter(s => !s.missing).length;
+      document.getElementById('counter-badge').innerText = `${activeCount}/13 SIGNALS ACTIVE`;
+    }
+
+    // Moves active students to new nearby points on the map grid
+    function moveActiveStudents() {
+      students.forEach(s => {
+        if (!s.missing) {
+          // Add random shift between -6% and +6% bounded inside map screen
+          const dx = (Math.random() - 0.5) * 12;
+          const dy = (Math.random() - 0.5) * 12;
+          s.x = Math.max(10, Math.min(85, s.x + dx));
+          s.y = Math.max(10, Math.min(85, s.y + dy));
+        }
+      });
+      render();
+    }
+
+    function severCurrentSignal() {
+      const sel = students.find(s => s.id === selectedId);
+      if (sel) {
+        sel.missing = true;
+        render();
+      }
+    }
+
+    function resetAll() {
+      students.forEach(s => s.missing = false);
+      render();
+    }
+
+    // Keyboard Hotkeys for Off-Camera Crew
+    document.addEventListener('keydown', (e) => {
+      const keyMap = {
+        '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+        '0': 10, '-': 11, '=': 12, ']': 13
+      };
+      if (keyMap[e.key]) {
+        const target = students.find(s => s.id === keyMap[e.key]);
+        if (target) {
+          target.missing = true;
+          render();
+        }
+      } else if (e.key.toLowerCase() === 'm') {
+        moveActiveStudents();
+      } else if (e.key.toLowerCase() === 'r') {
+        resetAll();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
