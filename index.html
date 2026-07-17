@@ -87,10 +87,6 @@
           <div class="info-value" id="disp-name">Select Subject</div>
         </div>
         <div class="info-group">
-          <div class="info-label">ORG / AFFILIATION</div>
-          <div class="info-value" id="disp-org">--</div>
-        </div>
-        <div class="info-group">
           <div class="info-label">LAST KNOWN LOCATION</div>
           <div class="info-value" id="disp-loc">--</div>
         </div>
@@ -110,86 +106,97 @@
 
   <script>
     const students = [
-      { id: 1, name: "Migs", loc: "UP Diliman - Sunken Garden", x: 25, y: 30, missing: false },
-      { id: 2, name: "Aya", loc: "Katipunan Ave / Ateneo", x: 40, y: 35, missing: false },
-      { id: 3, name: "Therese", loc: "Cubao / Aurora Blvd", x: 45, y: 65, missing: false },
-      { id: 4, name: "Yeoj", loc: "Commonwealth / Philcoa", x: 30, y: 20, missing: false },
-      { id: 5, name: "Sadako", loc: "Eastwood City", x: 75, y: 70, missing: false },
-      { id: 6, name: "Isaiah",  loc: "QC Memorial Circle", x: 35, y: 45, missing: false },
-      { id: 7, name: "Cayleb",  loc: "Tomas Morato / Timog", x: 20, y: 55, missing: false },
-      { id: 8, name: "Cobie",  "Novaliches / Fairview", x: 60, y: 15, missing: false },
-      { id: 9, name: "Frankie", loc: "Krus na Ligas", x: 32, y: 32, missing: false },
-      { id: 10, name: "Ian", loc: "Kamuning Rd", x: 25, y: 60, missing: false },
-      { id: 11, name: "Jaret", loc: "Project 4 / Anonas", x: 55, y: 55, missing: false },
-      { id: 12, name: "Eidrian", loc: "San Mateo Border", x: 80, y: 30, missing: false },
-      { id: 13, name: "Jio",  loc: "Balintawak Market", x: 15, y: 40, missing: false }
+      { id: 1, name: "Aya", loc: "Hideout 1", x: 25, y: 30, missing: false },
+      { id: 2, name: "Migs", loc: "Hideout 2", x: 40, y: 35, missing: false },
+      { id: 3, name: "Reese", loc: "Hideout 3", x: 45, y: 65, missing: false },
+      { id: 4, name: "Sadako", loc: "Hideout 4", x: 30, y: 20, missing: false },
+      { id: 5, name: "Ice", loc: "Hideout 5", x: 75, y: 70, missing: false },
+      { id: 6, name: "Yeoj", loc: "Hideout 6", x: 35, y: 45, missing: false },
+      { id: 7, name: "Eidrian", loc: "Hideout 7", x: 20, y: 55, missing: false },
+      { id: 8, name: "Jaret", loc: "Hideout 8", x: 60, y: 15, missing: false },
+      { id: 9, name: "Frankie", loc: "Hideout 9", x: 32, y: 32, missing: false },
+      { id: 10, name: "Cayleb", loc: "Hideout 10", x: 25, y: 60, missing: false },
+      { id: 11, name: "Ian", loc: "Hideout 11", x: 55, y: 55, missing: false },
+      { id: 12, name: "Cobie", loc: "Hideout 12", x: 80, y: 30, missing: false },
+      { id: 13, name: "Jio", loc: "Hideout 13", x: 15, y: 40, missing: false }
     ];
 
     let selectedId = 1;
 
     function render() {
-      // Render Sidebar
+      // 1. Render Sidebar List
       const listEl = document.getElementById('student-list');
-      listEl.innerHTML = '';
-      students.forEach(s => {
-        const card = document.createElement('div');
-        card.className = `student-card ${s.id === selectedId ? 'selected' : ''} ${s.missing ? 'missing' : ''}`;
-        card.onclick = () => { selectedId = s.id; render(); };
-        card.innerHTML = `
-          <span class="${s.missing ? 'tag-missing' : 'tag-active'}">${s.missing ? 'NO SIGNAL' : 'ONLINE'}</span>
-          <div class="student-name">${s.name}</div>
-          <div class="student-loc">${s.loc}</div>
-        `;
-        listEl.appendChild(card);
-      });
-
-      // Render Map Pins
-      const mapEl = document.getElementById('map-grid');
-      
-      // Update existing or create new pins so smooth CSS movement transition works
-      students.forEach(s => {
-        let pin = document.getElementById(`pin-${s.id}`);
-        if (!pin) {
-          pin = document.createElement('div');
-          pin.id = `pin-${s.id}`;
-          pin.onclick = () => { selectedId = s.id; render(); };
-          mapEl.appendChild(pin);
-        }
-        pin.className = `pin ${s.missing ? 'missing' : ''}`;
-        pin.style.left = `${s.x}%`;
-        pin.style.top = `${s.y}%`;
-        pin.innerHTML = `
-          <div class="pin-icon">${s.missing ? '✕' : ''}</div>
-          <div class="pin-label">${s.name.split(' ')[0]} ${s.name.split(' ')[1]}</div>
-        `;
-      });
-
-      // Render Inspector Details
-      const sel = students.find(s => s.id === selectedId);
-      document.getElementById('disp-name').innerText = sel.name;
-      document.getElementById('disp-org').innerText = sel.org;
-      document.getElementById('disp-loc').innerText = sel.loc;
-      document.getElementById('disp-coords').innerText = `14.${Math.floor(sel.y * 1000)}° N, 121.${Math.floor(sel.x * 1000)}° E`;
-      
-      const statusEl = document.getElementById('disp-status');
-      if (sel.missing) {
-        statusEl.innerText = "NO SIGNAL / DESAPARECIDO";
-        statusEl.style.color = "var(--alert)";
-      } else {
-        statusEl.innerText = "ACTIVE / TRACKING";
-        statusEl.style.color = "var(--active)";
+      if (listEl) {
+        listEl.innerHTML = '';
+        students.forEach(s => {
+          const card = document.createElement('div');
+          card.className = `student-card ${s.id === selectedId ? 'selected' : ''} ${s.missing ? 'missing' : ''}`;
+          card.onclick = () => { selectedId = s.id; render(); };
+          card.innerHTML = `
+            <span class="${s.missing ? 'tag-missing' : 'tag-active'}">${s.missing ? 'NO SIGNAL' : 'ONLINE'}</span>
+            <div class="student-name">${s.name}</div>
+            <div class="student-loc">${s.loc}</div>
+          `;
+          listEl.appendChild(card);
+        });
       }
 
-      // Update Counter
+      // 2. Render Map Pins
+      const mapEl = document.getElementById('map-grid');
+      if (mapEl) {
+        students.forEach(s => {
+          let pin = document.getElementById(`pin-${s.id}`);
+          if (!pin) {
+            pin = document.createElement('div');
+            pin.id = `pin-${s.id}`;
+            pin.onclick = () => { selectedId = s.id; render(); };
+            mapEl.appendChild(pin);
+          }
+          pin.className = `pin ${s.missing ? 'missing' : ''}`;
+          pin.style.left = `${s.x}%`;
+          pin.style.top = `${s.y}%`;
+          
+          pin.innerHTML = `
+            <div class="pin-icon">${s.missing ? '✕' : ''}</div>
+            <div class="pin-label">${s.name}</div>
+          `;
+        });
+      }
+
+      // 3. Render Inspector Panel Details
+      const sel = students.find(s => s.id === selectedId);
+      if (sel) {
+        const nameEl = document.getElementById('disp-name');
+        const locEl = document.getElementById('disp-loc');
+        const coordsEl = document.getElementById('disp-coords');
+        const statusEl = document.getElementById('disp-status');
+
+        if (nameEl) nameEl.innerText = sel.name;
+        if (locEl) locEl.innerText = sel.loc;
+        if (coordsEl) coordsEl.innerText = `14.${Math.floor(sel.y * 1000)}° N, 121.${Math.floor(sel.x * 1000)}° E`;
+
+        if (statusEl) {
+          if (sel.missing) {
+            statusEl.innerText = "NO SIGNAL / DESAPARECIDO";
+            statusEl.style.color = "var(--alert)";
+          } else {
+            statusEl.innerText = "ACTIVE / TRACKING";
+            statusEl.style.color = "var(--active)";
+          }
+        }
+      }
+
+      // 4. Update Header Badge Counter
       const activeCount = students.filter(s => !s.missing).length;
-      document.getElementById('counter-badge').innerText = `${activeCount}/13 SIGNALS ACTIVE`;
+      const badgeEl = document.getElementById('counter-badge');
+      if (badgeEl) {
+        badgeEl.innerText = `${activeCount}/13 SIGNALS ACTIVE`;
+      }
     }
 
-    // Moves active students to new nearby points on the map grid
     function moveActiveStudents() {
       students.forEach(s => {
         if (!s.missing) {
-          // Add random shift between -6% and +6% bounded inside map screen
           const dx = (Math.random() - 0.5) * 12;
           const dy = (Math.random() - 0.5) * 12;
           s.x = Math.max(10, Math.min(85, s.x + dx));
@@ -231,7 +238,10 @@
       }
     });
 
-    render();
+    // Run on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      render();
+    });
   </script>
 </body>
 </html>
